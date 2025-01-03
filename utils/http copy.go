@@ -1,20 +1,7 @@
-package cmd
-
-import (
-	"bytes"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gopkg.in/yaml.v2"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-)
+/*
+Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+*/
+package utils
 
 // 定义配置文件路径变量
 var configFile string
