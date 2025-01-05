@@ -4,8 +4,10 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
+	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +17,14 @@ var runCmd = &cobra.Command{
 	Short: "作为服务运行",
 	Long:  `作为服务运行，默认端口为8080，默认为exporter模式`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("run called")
+		onlineRegistry := prometheus.NewRegistry()
+		collector := NewWorkerCollector()
+		onlineRegistry.MustRegister(collector)
+		http.Handle("/metrics", promhttp.HandlerFor(onlineRegistry, promhttp.HandlerOpts{}))
+		http.HandleFunc("/probe", probeHandler)
+
+		// // 启动Web服务器
+		http.ListenAndServe(":8080", nil)
 	},
 }
 
