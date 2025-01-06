@@ -10,6 +10,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+type LocalWorkerInfo struct {
+	LatestBlockNumber    int    `json:"latestBlockNumber"`
+	LatestBlockHash      string `json:"latestBlockHash"`
+	FinalizedBlockNumber int    `json:"finalizedBlockNumber"`
+	FinalizedBlockHash   string `json:"finalizedBlockHash"`
+	WorkerAddress        string `json:"workerAddress"`
+	WorkerPublicKey      string `json:"workerPublicKey"`
+	WorkerStatus         string `json:"workerStatus"`
+	AtestedAt            int    `json:"attestedAt"`
+	AppVersion           string `json:"appVersion"`
+	ImplVersion          int    `json:"implVersion"`
+}
+
 // probeHandler 处理 /probe 请求
 func probeHandler(w http.ResponseWriter, r *http.Request) {
 	// 获取查询参数
@@ -37,7 +50,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(string(body))
 
-	var workerInfo WorkerInfo
+	var workerInfo LocalWorkerInfo
 	json_err := json.Unmarshal([]byte(string(body)), &workerInfo)
 	if json_err != nil {
 		http.Error(w, "解析 JSON 失败:", http.StatusInternalServerError)

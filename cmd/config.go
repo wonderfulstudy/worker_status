@@ -12,6 +12,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+// config.yaml 配置文件结构体
+type Config struct {
+	Pools struct {
+		Addresses []string `yaml:"addresses,omitempty"`
+	} `yaml:"pools"`
+}
+
 // 定义全局配置变量
 var configFile string
 var config Config

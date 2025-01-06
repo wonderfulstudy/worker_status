@@ -18,7 +18,7 @@ var runCmd = &cobra.Command{
 	Long:  `作为服务运行，默认端口为8080，默认为exporter模式`,
 	Run: func(cmd *cobra.Command, args []string) {
 		onlineRegistry := prometheus.NewRegistry()
-		collector := NewWorkerCollector()
+		collector := NewMetricsCollector()
 		onlineRegistry.MustRegister(collector)
 		http.Handle("/metrics", promhttp.HandlerFor(onlineRegistry, promhttp.HandlerOpts{}))
 		http.HandleFunc("/probe", probeHandler)

@@ -7,9 +7,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func NewWorkerCollector() *WorkerCollector {
-	return &WorkerCollector{
-		registeredWrokers: prometheus.NewDesc(
+type MetricsCollector struct {
+	allRegisteredWrokers *prometheus.Desc
+	myRegisteredWrokers  *prometheus.Desc
+	workerUptime         *prometheus.Desc
+}
+
+func NewMetricsCollector() *MetricsCollector {
+	return &MetricsCollector{
+		allRegisteredWrokers: prometheus.NewDesc(
+			"all_registered_workers",
+			"全网注册机器数",
+			nil, nil),
+		myRegisteredWrokers: prometheus.NewDesc(
 			"registered_workers",
 			"矿池中注册机器总数",
 			nil, nil),
@@ -20,21 +30,32 @@ func NewWorkerCollector() *WorkerCollector {
 	}
 }
 
-func (c *WorkerCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	// 添加自定义指标描述
-	ch <- c.registeredWrokers
+	ch <- c.allRegisteredWrokers
+	ch <- c.myRegisteredWrokers
 	ch <- c.workerUptime
 }
 
-func (c *WorkerCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	data, err := tools.GetWorkersFromOwnerAddresses(config.Pools.Addresses)
 	if err != nil {
 		fmt.Println("请求链上机器数据失败：", err)
 		return
 	}
 
+	allRegistredWorkers, err := tools.GetAllWorkersCount()
+	if err != nil {
+		fmt.Println("请求链上注册机器总数数据失败：", err)
+		return
+	}
 	ch <- prometheus.MustNewConstMetric(
-		c.registeredWrokers,
+		c.allRegisteredWrokers,
+		prometheus.GaugeValue,
+		float64(allRegistredWorkers))
+
+	ch <- prometheus.MustNewConstMetric(
+		c.myRegisteredWrokers,
 		prometheus.GaugeValue,
 		float64(len(data.Data.Workers)))
 
