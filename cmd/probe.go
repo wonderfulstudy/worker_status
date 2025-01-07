@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,7 +43,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	body, resp_err := ioutil.ReadAll(resp.Body)
+	body, resp_err := io.ReadAll(resp.Body)
 	if resp_err != nil {
 		http.Error(w, "Failed to fetch target", http.StatusInternalServerError)
 		return
