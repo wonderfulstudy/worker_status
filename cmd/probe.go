@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -28,8 +27,6 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	// 获取查询参数
 	target := r.URL.Query().Get("target")
 
-	fmt.Println("target:", target)
-
 	// 检查参数是否为空
 	if target == "" {
 		http.Error(w, "target and module parameters are required", http.StatusBadRequest)
@@ -48,7 +45,6 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to fetch target", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(string(body))
 
 	var workerInfo LocalWorkerInfo
 	json_err := json.Unmarshal([]byte(string(body)), &workerInfo)

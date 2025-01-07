@@ -100,7 +100,7 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		c.myRegisteredWrokers,
 		prometheus.GaugeValue,
-		float64(r))
+		float64(r+o+u+ro))
 	ch <- prometheus.MustNewConstMetric(
 		c.myDeregisteredWorkers,
 		prometheus.GaugeValue,
@@ -109,6 +109,10 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		c.myOnlineWorkers,
 		prometheus.GaugeValue,
 		float64(o))
+	ch <- prometheus.MustNewConstMetric(
+		c.myUnresponsiveWorkers,
+		prometheus.GaugeValue,
+		float64(u))
 	ch <- prometheus.MustNewConstMetric(
 		c.myRequestingOfflineWrokers,
 		prometheus.GaugeValue,
