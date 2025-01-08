@@ -58,33 +58,37 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 注册机器总数指标
 	workerStatus := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "workerStatus",
+		Name: "worker_status",
 		Help: "运行状态",
 		ConstLabels: prometheus.Labels{
 			"value": workerInfo.WorkerStatus,
 		},
 	})
 	workerAddress := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "workerAddress",
+		Name: "worker_address",
 		Help: "机器地址",
 		ConstLabels: prometheus.Labels{
 			"value": workerInfo.WorkerAddress,
 		},
 	})
 	workerPublicKey := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "workerPublicKey",
+		Name: "worker_publicKey",
 		Help: "机器公钥",
 		ConstLabels: prometheus.Labels{
 			"value": workerInfo.WorkerPublicKey,
 		},
 	})
 	latestBlockNumber := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "latestBlockNumber",
+		Name: "latest_block_number",
 		Help: "机器当前区块高度",
 	})
 	finalizedBlockNumber := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "finalizedBlockNumber",
+		Name: "finalized_block_number",
 		Help: "全网链上区块高度",
+	})
+	probeSuccess := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "worker_probe_success",
+		Help: "探测成功",
 	})
 
 	workerRegistry.MustRegister(workerStatus)
@@ -92,12 +96,14 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	workerRegistry.MustRegister(workerPublicKey)
 	workerRegistry.MustRegister(latestBlockNumber)
 	workerRegistry.MustRegister(finalizedBlockNumber)
+	workerRegistry.MustRegister(probeSuccess)
 
 	workerStatus.Set(float64(1))
 	workerAddress.Set(float64(1))
 	workerPublicKey.Set(float64(1))
 	latestBlockNumber.Set(float64(workerInfo.LatestBlockNumber))
 	finalizedBlockNumber.Set(float64(workerInfo.FinalizedBlockNumber))
+	probeSuccess.Set(float64(1))
 
 	// 使用 promhttp.HandlerFor 返回指标数据
 	handler := promhttp.HandlerFor(workerRegistry, promhttp.HandlerOpts{})
