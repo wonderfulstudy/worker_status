@@ -8,13 +8,13 @@ import (
 )
 
 type MetricsCollector struct {
-	allRegisteredWrokers       *prometheus.Desc
-	myRegisteredWrokers        *prometheus.Desc
-	myDeregisteredWorkers      *prometheus.Desc
-	myOnlineWorkers            *prometheus.Desc
-	myUnresponsiveWorkers      *prometheus.Desc
-	myUnresponsiveList         *prometheus.Desc
-	myRequestingOfflineWrokers *prometheus.Desc
+	allRegisteredWrokers     *prometheus.Desc
+	registeredWrokers        *prometheus.Desc
+	deregisteredWorkers      *prometheus.Desc
+	onlineWorkers            *prometheus.Desc
+	unresponsiveWorkers      *prometheus.Desc
+	nodeStatus               *prometheus.Desc
+	requestingOfflineWrokers *prometheus.Desc
 }
 
 func NewMetricsCollector() *MetricsCollector {
@@ -23,27 +23,27 @@ func NewMetricsCollector() *MetricsCollector {
 			"all_registered_workers",
 			"全网注册机器数",
 			nil, nil),
-		myRegisteredWrokers: prometheus.NewDesc(
+		registeredWrokers: prometheus.NewDesc(
 			"registered_workers",
 			"矿池中注册机器总数",
 			nil, nil),
-		myDeregisteredWorkers: prometheus.NewDesc(
+		deregisteredWorkers: prometheus.NewDesc(
 			"deregistered_workers",
 			"矿池中未注册成功机器总数",
 			nil, nil),
-		myOnlineWorkers: prometheus.NewDesc(
+		onlineWorkers: prometheus.NewDesc(
 			"online_workers",
 			"矿池中在线机器总数",
 			nil, nil),
-		myUnresponsiveWorkers: prometheus.NewDesc(
+		unresponsiveWorkers: prometheus.NewDesc(
 			"unresponsive_workers",
 			"矿池中掉线机器总数",
 			nil, nil),
-		myUnresponsiveList: prometheus.NewDesc(
+		nodeStatus: prometheus.NewDesc(
 			"unresponsive_workers_list",
 			"矿池中掉线机器总数",
-			[]string{"address", "owner_address"}, nil),
-		myRequestingOfflineWrokers: prometheus.NewDesc(
+			[]string{"address", "owner_address", "status"}, nil),
+		requestingOfflineWrokers: prometheus.NewDesc(
 			"requesting_offline_workers",
 			"矿池中请求离线的机器总数",
 			nil, nil),
@@ -53,12 +53,12 @@ func NewMetricsCollector() *MetricsCollector {
 func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	// 添加自定义指标描述
 	ch <- c.allRegisteredWrokers
-	ch <- c.myRegisteredWrokers
-	ch <- c.myDeregisteredWorkers
-	ch <- c.myOnlineWorkers
-	ch <- c.myUnresponsiveWorkers
-	ch <- c.myUnresponsiveList
-	ch <- c.myRequestingOfflineWrokers
+	ch <- c.registeredWrokers
+	ch <- c.deregisteredWorkers
+	ch <- c.onlineWorkers
+	ch <- c.unresponsiveWorkers
+	ch <- c.nodeStatus
+	ch <- c.requestingOfflineWrokers
 }
 
 func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
@@ -78,11 +78,12 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		} else if worker.Status == "Unresponsive" {
 			u++
 			ch <- prometheus.MustNewConstMetric(
-				c.myUnresponsiveList,
+				c.nodeStatus,
 				prometheus.GaugeValue,
 				float64(1),
 				worker.Address,
-				worker.OwnerAddress)
+				worker.OwnerAddress,
+				worker.Status)
 		} else if worker.Status == "RequestingOffline" {
 			ro++
 		}
@@ -98,23 +99,23 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.GaugeValue,
 		float64(allRegistredWorkers))
 	ch <- prometheus.MustNewConstMetric(
-		c.myRegisteredWrokers,
+		c.registeredWrokers,
 		prometheus.GaugeValue,
 		float64(r+o+u+ro))
 	ch <- prometheus.MustNewConstMetric(
-		c.myDeregisteredWorkers,
+		c.deregisteredWorkers,
 		prometheus.GaugeValue,
 		float64(d))
 	ch <- prometheus.MustNewConstMetric(
-		c.myOnlineWorkers,
+		c.onlineWorkers,
 		prometheus.GaugeValue,
 		float64(o))
 	ch <- prometheus.MustNewConstMetric(
-		c.myUnresponsiveWorkers,
+		c.unresponsiveWorkers,
 		prometheus.GaugeValue,
 		float64(u))
 	ch <- prometheus.MustNewConstMetric(
-		c.myRequestingOfflineWrokers,
+		c.requestingOfflineWrokers,
 		prometheus.GaugeValue,
 		float64(ro))
 }
