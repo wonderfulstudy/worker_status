@@ -1,6 +1,12 @@
 modules:
   alive_test:
     prober: alive
+  chain_test:
+    prober: chain
+    chain:
+      monitor_addresses:
+      - "5ES6Mu3uUUB8QRarGB4J73RnoeTxADWV8HKhnKfrASpoLSEP"
+      - "5FsjV5bK4tXDD8uDjYHR6E3rhy4QhdYYdqqN6xDGeTmd92m4"
   http_2xx:
     prober: http
     http:

@@ -211,7 +211,6 @@ type ALIVEProbe struct {
 
 // 添加CHAIN模块配置信息结构体
 type CHAINProbe struct {
-	RpcUrl           string   `yaml:"rpc_url,omitempty"`
 	MonitorAddresses []string `yaml:"monitor_addresses,omitempty"`
 }
 

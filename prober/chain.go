@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,11 +41,44 @@ var AllWorkersQuery string = `
 // 根据矿池地址列表查询机器在线情况
 var PoolQuery string = `
 	query MyQuery {
-		workers(where: {ownerAddress_in: ["%v"]}) {
-			address
-			ownerAddress
-			status
-			uptime
+		workersConnection(where: {ownerAddress_in: ["%v"]}, orderBy: address_ASC) {
+			totalCount
+			pageInfo {
+				endCursor
+				hasNextPage
+				hasPreviousPage
+				startCursor
+			}
+			edges {
+				node {
+					address
+					ownerAddress
+					status
+					uptime
+				}
+			}
+		}
+	}`
+
+// 从指定下标开始查询机器在线情况
+var PoolAfterQuery string = `
+	query MyQuery($after: String = "%s") {
+		workersConnection(where: {ownerAddress_in: ["%v"]}, orderBy: address_ASC, after: $after) {
+			totalCount
+			pageInfo {
+				endCursor
+				hasNextPage
+				hasPreviousPage
+				startCursor
+			}
+			edges {
+				node {
+					address
+					ownerAddress
+					status
+					uptime
+				}
+			}
 		}
 	}`
 
@@ -72,12 +106,23 @@ type TotalCountResponse struct {
 
 type PoolResponse struct {
 	Data struct {
-		Workers struct {
-			Address      string `json:"address"`
-			OwnerAddress string `json:"ownerAddress"`
-			Status       string `json:"status"`
-			Uptime       string `json:"uptime"`
-		} `json:"workers"`
+		WorkersConnection struct {
+			TotalCount int `json:"totalCount"`
+			PageInfo   struct {
+				EndCursor       string `json:"endCursor"`
+				HasNextPage     bool   `json:"hasNextPage"`
+				HasPreviousPage bool   `json:"hasPreviousPage"`
+				StartCursor     string `json:"startCursor"`
+			} `json:"pageInfo"`
+			Edges []struct {
+				Node struct {
+					Address      string `json:"address"`
+					OwnerAddress string `json:"ownerAddress"`
+					Status       string `json:"status"`
+					Uptime       int    `json:"uptime"`
+				} `json:"node"`
+			} `json:"edges"`
+		} `json:"workersConnection"`
 	} `json:"data"`
 }
 
@@ -120,19 +165,14 @@ func setChainAllInfo(target string, registry *prometheus.Registry, logger *slog.
 			Help: "请求链上所有数据状态码",
 		})
 
-		allInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		chainInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "probe_chain_all_info",
 			Help: "全网数据信息",
 		}, []string{"phase"})
-
-		ourAddressesGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "probe_chain_addresses_info",
-			Help: "worker 区块状态",
-		}, []string{"latest_block_hash", "finalized_block_hash", "phase"})
 	)
 
-	registry.MustRegister(allInfoGaugeVec)
-	registry.MustRegister(ourAddressesGaugeVec)
+	registry.MustRegister(statusCodeGauge)
+	registry.MustRegister(chainInfoGaugeVec)
 
 	resolvestart := time.Now()
 
@@ -156,27 +196,39 @@ func setChainAllInfo(target string, registry *prometheus.Registry, logger *slog.
 		return 0.0, err
 	}
 
-	allInfoGaugeVec.WithLabelValues("totalCount").Set(float64(totalCountResponse.Data.WorkersConnection.TotalCount))
+	chainInfoGaugeVec.WithLabelValues("totalCount").Set(float64(totalCountResponse.Data.WorkersConnection.TotalCount))
 
 	return lookupTime, nil
+}
+
+func setPoolWorkerInfo(poolResponse PoolResponse, registry *prometheus.GaugeVec) (err error) {
+	for _, edge := range poolResponse.Data.WorkersConnection.Edges {
+		registry.WithLabelValues(
+			edge.Node.Address,
+			edge.Node.OwnerAddress,
+			edge.Node.Status,
+			"uptime").Set(float64(edge.Node.Uptime))
+	}
+
+	return nil
 }
 
 // 设置矿池中所有链上数据
 func setPoolAllInfo(target string, module config.Module, registry *prometheus.Registry, logger *slog.Logger) (lookupTime float64, err error) {
 	var (
-		statusCodeGauge = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "probe_pool_all_status_code",
-			Help: "请求矿池中所有数据状态码",
+		poolAllRegisteredGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "probe_pool_all_registered",
+			Help: "矿池中数据信息",
 		})
 
-		poolInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "probe__all_info",
-			Help: "矿池中数据信息",
-		}, []string{"phase"})
+		workerInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "probe_pool_worker_info",
+			Help: "矿池中每台机器信息",
+		}, []string{"address", "owner_address", "status", "phase"})
 	)
 
-	registry.MustRegister(statusCodeGauge)
-	registry.MustRegister(poolInfoGaugeVec)
+	registry.MustRegister(poolAllRegisteredGauge)
+	registry.MustRegister(workerInfoGaugeVec)
 
 	resolvestart := time.Now()
 
@@ -184,57 +236,81 @@ func setPoolAllInfo(target string, module config.Module, registry *prometheus.Re
 		lookupTime = time.Since(resolvestart).Seconds()
 	}()
 
-	// config.CHAINProbe.MonitorAddresses
-
 	var poolResponse PoolResponse
+
+	// 首次请求链上数据，获取矿池中注册机器总数
 	var query = fmt.Sprintf(PoolQuery, strings.Join(module.CHAIN.MonitorAddresses, `","`))
 	// 请求链上所有数据
-	statusCode, body, err := queryPost(query, target, logger)
+	_, body, err := queryPost(query, target, logger)
 	if err != nil {
-		logger.Error("请求矿池中所有机器信息失败", "err", err)
+		logger.Error("发起POST请求矿池中所有机器信息失败", "err", err)
 		return 0.0, err
 	}
-	statusCodeGauge.Set(float64(statusCode))
 
 	// 解析返回的 JSON 数据
-	json_err := json.Unmarshal([]byte(string(body)), &poolResponse)
-	if json_err != nil {
-		fmt.Println("解析 JSON 失败:", json_err)
+	err = json.Unmarshal([]byte(string(body)), &poolResponse)
+	if err != nil {
+		logger.Error("解析 JSON 失败:", "err", err)
 		return 0.0, err
 	}
-
-	allInfoGaugeVec.WithLabelValues("totalCount").Set(float64(totalCountResponse.Data.WorkersConnection.TotalCount))
+	poolAllRegisteredGauge.Set(float64(poolResponse.Data.WorkersConnection.TotalCount))
+	setPoolWorkerInfo(poolResponse, workerInfoGaugeVec)
+	if poolResponse.Data.WorkersConnection.PageInfo.HasNextPage {
+		startCursor := 100
+		for {
+			var tmpPoolResponse PoolResponse
+			var query = fmt.Sprintf(PoolAfterQuery, strconv.Itoa(startCursor), strings.Join(module.CHAIN.MonitorAddresses, `","`))
+			_, body, err := queryPost(query, target, logger)
+			if err != nil {
+				logger.Error("发起POST请求矿池中所有机器信息失败", "err", err)
+				return 0.0, err
+			}
+			err = json.Unmarshal([]byte(string(body)), &tmpPoolResponse)
+			if err != nil {
+				logger.Error("解析 JSON 失败:", "err", err)
+				return 0.0, err
+			}
+			setPoolWorkerInfo(tmpPoolResponse, workerInfoGaugeVec)
+			if tmpPoolResponse.Data.WorkersConnection.PageInfo.HasNextPage {
+				startCursor = startCursor + 100
+				continue
+			} else {
+				break
+			}
+		}
+	}
 
 	return lookupTime, nil
 }
 
 func ProbeCHAIN(ctx context.Context, target string, module config.Module, registry *prometheus.Registry, logger *slog.Logger) (success bool) {
 	var (
-		durationChainAllGaugeVec = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "probe_chain_all_duration_seconds",
-			Help: "探测链上数据耗费的总时间",
-		})
-
-		durationPoolAllGaugeVec = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "probe_pool_all_duration_seconds",
+		allDurationGaugeVec = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "probe_all_duration_seconds",
 			Help: "探测链上数据耗费的总时间",
 		})
 	)
 
-	registry.MustRegister(durationChainAllGaugeVec)
-	registry.MustRegister(durationPoolAllGaugeVec)
+	registry.MustRegister(allDurationGaugeVec)
 
 	// 如果目标没有加http或者https则加上
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
 		target = "http://" + target
 	}
 
-	lookuptime, err := setChainAllInfo(target, registry, logger)
+	chainTime, err := setChainAllInfo(target, registry, logger)
 	if err != nil {
-		logger.Error("设置节点指标失败", "err", err)
+		logger.Error("设置链上总信息指标失败", "err", err)
 		return false
 	}
-	durationChainAllGaugeVec.Set(lookuptime)
+
+	poolTime, err := setPoolAllInfo(target, module, registry, logger)
+	if err != nil {
+		logger.Error("设置矿池总信息指标失败", "err", err)
+		return false
+	}
+
+	allDurationGaugeVec.Set(chainTime + poolTime)
 
 	return true
 }
