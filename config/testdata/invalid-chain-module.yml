@@ -1,0 +1,15 @@
+modules:
+  alive_test:
+    prober: chain
+    timeout: 5s
+    chain:
+      rpc_url: "https://dev-squid.cybros.network/graphql"
+      monitor_addresses:
+        - "5ES6Mu3uUUB8QRarGB4J73RnoeTxADWV8HKhnKfrASpoLSEP"
+        - "5FsjV5bK4tXDD8uDjYHR6E3rhy4QhdYYdqqN6xDGeTmd92m4"
+        - "5GsdEyhPWTDC6K6jgNGdD53fEUZnR7S7YPGipCEeVunrPkCZ"
+        - "5EKsXBHZRzZzZGnYZHw2KFEH1bG4NSteBXLmh5TL1UtdQTtj"
+        - "5CXmbBFUir7ioxe39kXpNisSr5PdHshuFBNiD6UHW7o1CBfw"
+        - "5GC5nMuEtAmS2xKE5U4Z14sWRQe4EFpiCust5poPNAS6vayK"
+        - "5EeK2fZZJxScfNXdZgPb5LsfQhxvjFBag5Zb3B5fiuEfS8Xp"
+        - "5DV214muYmpxZX6NYXWawoCBjTXeu5BbksWcKC2E5upWXeaa"

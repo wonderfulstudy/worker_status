@@ -200,12 +200,19 @@ type Module struct {
 	DNS     DNSProbe      `yaml:"dns,omitempty"`
 	GRPC    GRPCProbe     `yaml:"grpc,omitempty"`
 	ALIVE   ALIVEProbe    `yaml:"alive,omitempty"` // 添加新增的模块配置信息
+	CHAIN   CHAINProbe    `yaml:"chain,omitempty"`
 }
 
 // 添加ALIVE模块配置信息结构体
 type ALIVEProbe struct {
 	ValidUrl bool   `yaml:"valid_url,omitempty"`
 	Method   string `yaml:"method,omitempty"`
+}
+
+// 添加CHAIN模块配置信息结构体
+type CHAINProbe struct {
+	RpcUrl           string   `yaml:"rpc_url,omitempty"`
+	MonitorAddresses []string `yaml:"monitor_addresses,omitempty"`
 }
 
 type HTTPProbe struct {

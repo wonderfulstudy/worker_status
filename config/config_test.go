@@ -24,9 +24,9 @@ import (
 func TestLoadConfig(t *testing.T) {
 	sc := NewSafeConfig(prometheus.NewRegistry())
 
-	err := sc.ReloadConfig("testdata/invalid-alive-module.yml", nil)
+	err := sc.ReloadConfig("testdata/invalid-chain-module.yml", nil)
 	if err != nil {
-		t.Errorf("Error loading config %v: %v", "invalid-alive-module.yml", err)
+		t.Errorf("Error loading config %v: %v", "invalid-chain-module.yml", err)
 	}
 }
 

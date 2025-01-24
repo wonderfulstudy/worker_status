@@ -1,4 +1,6 @@
 modules:
+  alive_test:
+    prober: alive
   http_2xx:
     prober: http
     http:

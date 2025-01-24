@@ -27,7 +27,7 @@ type WorkerInfo struct {
 }
 
 // 获取节点的json数据返回
-func getWrokerInfo(ctx context.Context, target string, registry *prometheus.Registry, logger *slog.Logger) (info *WorkerInfo, lookupTime float64, err error) {
+func setWrokerInfo(target string, registry *prometheus.Registry, logger *slog.Logger) (lookupTime float64, err error) {
 	var (
 		statusCodeGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "probe_alive_status_code",
@@ -37,12 +37,17 @@ func getWrokerInfo(ctx context.Context, target string, registry *prometheus.Regi
 		workerInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "probe_alive_worker_info",
 			Help: "worker状态",
-		}, []string{})
+		}, []string{
+			"worker_status",
+			"worker_public_key",
+			"worker_address",
+			"app_version",
+			"phase"})
 
 		workerBlockInfoGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "probe_alive_worker_block_info",
-			Help: "worker状态",
-		}, []string{})
+			Help: "worker 区块状态",
+		}, []string{"latest_block_hash", "finalized_block_hash", "phase"})
 	)
 
 	registry.MustRegister(statusCodeGauge)
@@ -58,28 +63,46 @@ func getWrokerInfo(ctx context.Context, target string, registry *prometheus.Regi
 	resp, err := http.Get(target)
 	if err != nil {
 		logger.Error("获取节点信息失败", "err", err)
-		return nil, 0.0, err
+		return 0.0, err
 	}
 	defer resp.Body.Close()
 	statusCodeGauge.Set(float64(resp.StatusCode))
 
 	body, resp_err := io.ReadAll(resp.Body)
 	if resp_err != nil {
-		logger.Error("读取节点信息失败", http.StatusInternalServerError)
-		return nil, 0.0, err
+		logger.Error("读取节点信息失败", "err", resp_err)
+		return 0.0, err
 	}
 
 	var workerInfo WorkerInfo
 	json_err := json.Unmarshal([]byte(string(body)), &workerInfo)
 	if json_err != nil {
-		logger.Error("解析 JSON 失败:", http.StatusInternalServerError)
-		return nil, 0.0, err
+		logger.Error("解析 JSON 失败:", "err", json_err)
+		return 0.0, err
 	}
 
-	for _, ph := range []string{"attestedAt", "appVersion", "implVersion"} {
-		workerInfoGaugeVec.WithLabelValues(ph).set
-	}
+	workerInfoGaugeVec.WithLabelValues(
+		workerInfo.WorkerStatus,
+		workerInfo.WorkerPublicKey,
+		workerInfo.WorkerAddress,
+		workerInfo.AppVersion,
+		"attestedAt").Set(float64(workerInfo.AtestedAt))
+	workerInfoGaugeVec.WithLabelValues(
+		workerInfo.WorkerStatus,
+		workerInfo.WorkerPublicKey,
+		workerInfo.WorkerAddress,
+		workerInfo.AppVersion,
+		"implVersion").Set(float64(workerInfo.ImplVersion))
+	workerBlockInfoGaugeVec.WithLabelValues(
+		workerInfo.LatestBlockHash,
+		workerInfo.FinalizedBlockHash,
+		"latestBlockNumber").Set(float64(workerInfo.LatestBlockNumber))
+	workerBlockInfoGaugeVec.WithLabelValues(
+		workerInfo.LatestBlockHash,
+		workerInfo.FinalizedBlockHash,
+		"finalizedBlockNumber").Set(float64(workerInfo.FinalizedBlockNumber))
 
+	return lookupTime, nil
 }
 
 func ProbeALIVE(ctx context.Context, target string, module config.Module, registry *prometheus.Registry, logger *slog.Logger) (success bool) {
@@ -94,4 +117,12 @@ func ProbeALIVE(ctx context.Context, target string, module config.Module, regist
 		target = "http://" + target
 	}
 
+	lookuptime, err := setWrokerInfo(target, registry, logger)
+	if err != nil {
+		logger.Error("设置节点指标失败", "err", err)
+		return false
+	}
+	durationGaugeVec.Set(lookuptime)
+
+	return true
 }
