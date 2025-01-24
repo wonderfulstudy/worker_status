@@ -199,6 +199,13 @@ type Module struct {
 	ICMP    ICMPProbe     `yaml:"icmp,omitempty"`
 	DNS     DNSProbe      `yaml:"dns,omitempty"`
 	GRPC    GRPCProbe     `yaml:"grpc,omitempty"`
+	ALIVE   ALIVEProbe    `yaml:"alive,omitempty"` // 添加新增的模块配置信息
+}
+
+// 添加ALIVE模块配置信息结构体
+type ALIVEProbe struct {
+	ValidUrl bool   `yaml:"valid_url,omitempty"`
+	Method   string `yaml:"method,omitempty"`
 }
 
 type HTTPProbe struct {
@@ -308,6 +315,18 @@ func (s *Module) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal((*plain)(s)); err != nil {
 		return err
 	}
+	return nil
+}
+
+// 从yaml配置中反序列化ALIVE探针配置，并进行验证和处理
+func (s *ALIVEProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// 反序列化配置，但是后续中可能不会使用配置
+	// 后续有使用配置时再完善验证功能
+	type plain ALIVEProbe
+	if err := unmarshal((*plain)(s)); err != nil {
+		return err
+	}
+
 	return nil
 }
 

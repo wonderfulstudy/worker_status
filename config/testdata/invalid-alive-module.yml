@@ -1,0 +1,7 @@
+modules:
+  alive_test:
+    prober: alive
+    timeout: 5s
+    alive:
+      valid_url: true
+      method: GET
