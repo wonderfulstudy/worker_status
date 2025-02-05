@@ -203,11 +203,13 @@ func setChainAllInfo(target string, registry *prometheus.Registry, logger *slog.
 
 func setPoolWorkerInfo(poolResponse PoolResponse, registry *prometheus.GaugeVec) (err error) {
 	for _, edge := range poolResponse.Data.WorkersConnection.Edges {
-		registry.WithLabelValues(
-			edge.Node.Address,
-			edge.Node.OwnerAddress,
-			edge.Node.Status,
-			"uptime").Set(float64(edge.Node.Uptime))
+		if edge.Node.Status != "Online" {
+			registry.WithLabelValues(
+				edge.Node.Address,
+				edge.Node.OwnerAddress,
+				edge.Node.Status,
+				"uptime").Set(float64(edge.Node.Uptime))
+		}
 	}
 
 	return nil
