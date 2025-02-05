@@ -1,0 +1,23 @@
+:global macDomainMap [
+    "16:d0:00:ec:1d:0d=node-383.worker.cd-farm.cybros.com",
+    "32:8e:47:8b:21:8d=node-384.worker.cd-farm.cybros.com",
+    "7a:d3:d4:10:c9:f6=node-385.worker.cd-farm.cybros.com",
+    "96:fc:d7:18:18:b1=node-386.worker.cd-farm.cybros.com",
+    "82:13:fc:aa:77:c1=node-387.worker.cd-farm.cybros.com",
+    "ce:96:a6:c7:bb:31=node-388.worker.cd-farm.cybros.com",
+    "b6:a8:5b:d9:b2:c0=node-389.worker.cd-farm.cybros.com",
+    "e2:d0:8e:6c:c0:27=node-390.worker.cd-farm.cybros.com",
+    "3a:84:50:c4:9e:7f=node-391.worker.cd-farm.cybros.com"
+]
+
+:local clientMac [/ip dhcp-server lease get [find active=yes] mac-address]
+:foreach entry in=$macDomainMap do={
+    :local parts [:split $entry "="]
+    :local mac [:pick $parts 0]
+    :local domain [:pick $parts 1]
+    :if ($mac = $clientMac) do={
+        :local clientIP [/ip dhcp-server lease get [find mac-address=$mac] address]
+        /ip dns static remove [find name=$domain]
+        /ip dns static add address=$clientIP name=$domain
+    }
+}
