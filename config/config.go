@@ -192,15 +192,22 @@ func MustNewRegexp(s string) Regexp {
 }
 
 type Module struct {
-	Prober  string        `yaml:"prober,omitempty"`
-	Timeout time.Duration `yaml:"timeout,omitempty"`
-	HTTP    HTTPProbe     `yaml:"http,omitempty"`
-	TCP     TCPProbe      `yaml:"tcp,omitempty"`
-	ICMP    ICMPProbe     `yaml:"icmp,omitempty"`
-	DNS     DNSProbe      `yaml:"dns,omitempty"`
-	GRPC    GRPCProbe     `yaml:"grpc,omitempty"`
-	ALIVE   ALIVEProbe    `yaml:"alive,omitempty"` // 添加新增的模块配置信息
-	CHAIN   CHAINProbe    `yaml:"chain,omitempty"`
+	Prober   string        `yaml:"prober,omitempty"`
+	Timeout  time.Duration `yaml:"timeout,omitempty"`
+	HTTP     HTTPProbe     `yaml:"http,omitempty"`
+	TCP      TCPProbe      `yaml:"tcp,omitempty"`
+	ICMP     ICMPProbe     `yaml:"icmp,omitempty"`
+	DNS      DNSProbe      `yaml:"dns,omitempty"`
+	GRPC     GRPCProbe     `yaml:"grpc,omitempty"`
+	ALIVE    ALIVEProbe    `yaml:"alive,omitempty"`    // 添加新增的模块配置信息
+	TESTNET2 TESTNET2Probe `yaml:"testnet2,omitempty"` // 2阶段测试网
+	CHAIN    CHAINProbe    `yaml:"chain,omitempty"`
+}
+
+// 添加2阶段测试网信息结构体
+type TESTNET2Probe struct {
+	ValidUrl bool   `yaml:"valid_url,omitempty"`
+	Method   string `yaml:"method,omitempty"`
 }
 
 // 添加ALIVE模块配置信息结构体
