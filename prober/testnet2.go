@@ -22,7 +22,7 @@ type TestNet2NodeInfo struct {
 	Owner        OwnerStruct
 	Pubkey       string `json:"pubkey"`
 	Registry_api string `json:"registry_api"`
-	RalayStatus  string `json:"ralay_status"`
+	RelayStatus  string `json:"relay_status"`
 	Version      string `json:"version"`
 }
 
@@ -82,7 +82,7 @@ func setTestNet2NodeInfo(target string, registry *prometheus.Registry, logger *s
 		workerInfo.Owner.SolanaAddress,
 		workerInfo.Pubkey,
 		workerInfo.Registry_api,
-		workerInfo.RalayStatus,
+		workerInfo.RelayStatus,
 		workerInfo.Version,
 	).Set(float64(1))
 
