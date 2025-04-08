@@ -5,7 +5,7 @@ COPY ./ /app
 
 RUN go build -o /app/blackbox_exporter -v .
 
-FROM alpine:latest
+FROM alpine:3.21.3
 LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
 
 COPY --from=builder /app/blackbox_exporter /bin/blackbox_exporter

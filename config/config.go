@@ -343,6 +343,18 @@ func (s *ALIVEProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// 从yaml配置中反序列化testnet2探针配置，并进行验证和处理
+func (s *TESTNET2Probe) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// 反序列化配置，但是后续中可能不会使用配置
+	// 后续有使用配置时再完善验证功能
+	type plain TESTNET2Probe
+	if err := unmarshal((*plain)(s)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (s *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	*s = DefaultHTTPProbe
