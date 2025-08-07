@@ -24,6 +24,7 @@ type TestNet2NodeInfo struct {
 	Registry_api string `json:"registry_api"`
 	RelayStatus  string `json:"relay_status"`
 	Version      string `json:"version"`
+	NodeTime     string `json:"time"`
 }
 
 // 获取节点的json数据返回
@@ -44,6 +45,7 @@ func setTestNet2NodeInfo(target string, registry *prometheus.Registry, logger *s
 			"registry_api",
 			"relay_status",
 			"version",
+			"node_time",
 		})
 	)
 
@@ -77,6 +79,12 @@ func setTestNet2NodeInfo(target string, registry *prometheus.Registry, logger *s
 		return 0.0, err
 	}
 
+	nodeTime, err := getTime(target)
+	if err != nil {
+		logger.Error("获取主机时间失败:", "err", err)
+		return 0.0, err
+	}
+
 	workerInfoGaugeVec.WithLabelValues(
 		workerInfo.DeviceStatus,
 		workerInfo.Owner.SolanaAddress,
@@ -84,6 +92,7 @@ func setTestNet2NodeInfo(target string, registry *prometheus.Registry, logger *s
 		workerInfo.Registry_api,
 		workerInfo.RelayStatus,
 		workerInfo.Version,
+		nodeTime,
 	).Set(float64(1))
 
 	return lookupTime, nil
