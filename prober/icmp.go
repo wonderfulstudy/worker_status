@@ -79,11 +79,6 @@ func ProbeICMP(ctx context.Context, target string, module config.Module, registr
 			Name: "probe_icmp_reply_hop_limit",
 			Help: "Replied packet hop limit (TTL for ipv4)",
 		})
-
-		nodeTime = prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "probe_icmp_node_time",
-			Help: "机器当前时间",
-		})
 	)
 
 	for _, lv := range []string{"resolve", "setup", "rtt"} {

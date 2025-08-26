@@ -35,14 +35,12 @@ import (
 
 var (
 	Probers = map[string]ProbeFn{
-		"http":     ProbeHTTP,
-		"tcp":      ProbeTCP,
-		"icmp":     ProbeICMP,
-		"dns":      ProbeDNS,
-		"grpc":     ProbeGRPC,
-		"alive":    ProbeALIVE,
-		"testnet2": ProbeTestNet2,
-		"chain":    ProbeCHAIN,
+		"http":  ProbeHTTP,
+		"tcp":   ProbeTCP,
+		"icmp":  ProbeICMP,
+		"dns":   ProbeDNS,
+		"grpc":  ProbeGRPC,
+		"dephy": ProbeDephy,
 	}
 )
 

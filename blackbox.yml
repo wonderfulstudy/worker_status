@@ -1,8 +1,6 @@
 modules:
-  alive_test:
-    prober: alive
-  testnet2_target:
-    prober: testnet2
+  mainnet:
+    prober: dephy
   http_2xx:
     prober: http
     http:
